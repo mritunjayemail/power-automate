@@ -1,6 +1,6 @@
 # Weekly "Apply credit card" reminder — Power Automate (Microsoft 365 / Outlook)
 
-Sends **one separate email per person** listed in an Excel sheet on OneDrive,
+Sends **one separate email per person** listed in an Excel sheet in SharePoint,
 **every Monday at 10:00 AM**, from the Microsoft 365 cloud — so it is delivered even if
 your laptop is switched off and Outlook is closed.
 
@@ -9,7 +9,7 @@ your laptop is switched off and Outlook is closed.
 | Schedule | Weekly, Monday, 10:00 AM (your time zone) |
 | Subject | `Apply credit card - <recipient name>` |
 | Body | `Dear <recipient name>, Please note you didn't applied credit card yet, Please apply. Thanks - Rakhi` |
-| Recipients | The rows of the `Recipients` table in `recipients.xlsx` on OneDrive |
+| Recipients | The rows of the `Recipients` table in `recipients.xlsx` in a SharePoint document library |
 | Runs on | Microsoft's servers (Power Automate cloud flow) — **not** your laptop |
 
 ---
@@ -36,13 +36,14 @@ machine on. Build a **cloud flow**, as described below.
 2. Access to <https://make.powerautomate.com> with that account.
    The seeded Power Automate rights in most M365 plans are enough; no premium licence is
    needed for the Recurrence trigger, Excel Online (Business), or Office 365 Outlook.
-3. **OneDrive for Business** (comes with the same account) to hold the sheet.
+3. A **SharePoint site** you can upload to — a team site such as
+   `https://contoso.sharepoint.com/sites/Finance`, with **Edit** rights on its document library.
 4. Permission to send mail from the mailbox you sign in with. Emails will show **From: you**.
    To send as a shared mailbox, see section 8.
 
 ---
 
-## 2. Put the recipient sheet on OneDrive
+## 2. Put the recipient sheet in SharePoint
 
 `recipients.xlsx` in this folder is a ready-made starter file. It already contains a **named table**
 called `Recipients`:
@@ -52,12 +53,19 @@ called `Recipients`:
 | Mritunjay Kumar | mritunjayemail@gmail.com | Yes |
 
 1. Open `recipients.xlsx`, add one row per person, and save.
-2. Upload it to **OneDrive for Business**, somewhere stable — e.g. a folder called `Automation`,
-   giving `/Automation/recipients.xlsx`.
+2. Upload it to your SharePoint site's document library, somewhere stable — e.g. the
+   **Documents** library, in a folder called `Automation`, giving `/Automation/recipients.xlsx`.
+
+   Site contents → **Documents** → **Upload** → **Files**. Note the site URL; you need it in
+   step 3.3.
+
+A SharePoint library is the better home for a shared reminder: the list belongs to the team rather
+than to one person's account, several people can be given edit rights, and it does not disappear
+when someone leaves the company.
 
 ### If you build the sheet yourself instead
 
-1. **New** → **Excel workbook** in OneDrive.
+1. In the document library: **New** → **Excel workbook**.
 2. `Name` in **A1**, `Email` in **B1**, `Active` in **C1**. Fill the rows underneath.
 3. Select the filled range **including the headers** → **Insert** → **Table** →
    tick **My table has headers** → **OK**.
@@ -103,8 +111,9 @@ Setting the time zone also keeps 10:00 AM correct across daylight-saving changes
 1. **+ New step** → search **Excel Online (Business)** → **List rows present in a table**.
 2. Sign in when prompted to create the connection (this stores a consented token in the cloud).
 3. Fill the dropdowns — do not type these by hand, pick them so the ids resolve:
-   - **Location**: `OneDrive for Business`
-   - **Document Library**: `OneDrive`
+   - **Location**: your SharePoint site, e.g. `https://contoso.sharepoint.com/sites/Finance`
+     (if it is not in the list, choose **Enter custom value** and paste the site URL)
+   - **Document Library**: `Documents` (or whichever library you uploaded to)
    - **File**: browse to `/Automation/recipients.xlsx`
    - **Table**: `Recipients`
 4. **Show advanced options** → **Filter Query** (only if you use the `Active` column):
@@ -201,8 +210,9 @@ This is the point of keeping it in Excel: **you never open Power Automate again.
 - **Pause someone**: set `Active` to `No`. The Filter Query skips them, and you keep the row.
 - **Remove someone**: delete the whole row (right-click → **Delete** → **Table Rows**).
 
-The next Monday run picks up whatever the sheet says at that moment. Editing it in Excel Online in
-the browser is safest, because it saves in place.
+The next Monday run picks up whatever the sheet says at that moment. Open it from the library and
+edit in **Excel for the web** — it saves in place, keeps the file ID stable, and SharePoint keeps
+version history if someone deletes a row by accident (⋯ → **Version history** to restore).
 
 ### Things that catch people out
 
@@ -212,7 +222,9 @@ the browser is safest, because it saves in place.
   by name.
 - **Do not add rows below a blank line** — they fall outside the table and will be ignored. Check
   that new rows are inside the shaded table area.
-- **Do not open the file in the desktop Excel and leave it locked** while the flow runs.
+- **Do not leave the file checked out** in SharePoint, and avoid leaving it open in desktop Excel
+  with unsaved changes — the flow reads the saved version, not what is on someone's screen.
+- **Do not move the file between libraries or folders** after the flow is pointed at it.
 
 ---
 
@@ -225,8 +237,8 @@ the browser is safest, because it saves in place.
   `Credit card reminder flow FAILED`.
 - **Turn it off for a week**: Power Automate → **My flows** → ⋯ → **Turn off**.
 - **Ownership**: ⋯ → **Share** → add a co-owner. A flow owned by a single account stops working
-  when that account is disabled — a co-owner prevents a surprise outage. Share the OneDrive file
-  with them too, or keep the sheet on a SharePoint team site instead of personal OneDrive.
+  when that account is disabled — a co-owner prevents a surprise outage. Give them **Edit**
+  rights on the SharePoint library too, so they can maintain the list.
 - **Idle suspension**: flows in trial/developer environments can be suspended after long periods
   of inactivity. A weekly run keeps this one active; you will get a warning email if it is ever
   about to be disabled.
@@ -261,8 +273,8 @@ flow itself or in the connections:
 | What | Where it lives |
 |---|---|
 | Mailbox credentials | The **Office 365 Outlook connection** you signed into once (step 3.5). It stores a consented token in the cloud, listed under **Data → Connections** — that is what lets the flow send while your laptop is off |
-| OneDrive access | The **Excel Online (Business) connection** (step 3.3), same mechanism |
-| Recipient list | `recipients.xlsx` on OneDrive |
+| SharePoint access | The **Excel Online (Business) connection** (step 3.3), same mechanism |
+| Recipient list | `recipients.xlsx` in the SharePoint document library |
 | Subject / body text | The *Send an email (V2)* card |
 | Schedule | The Recurrence trigger |
 
@@ -301,7 +313,9 @@ needs a Dataverse-enabled environment and the flow must be created inside the so
 | Flow runs green, sends nothing | The table is empty, the new rows fell outside the table, or `Filter Query` excludes every row |
 | `Email` is blank in the mail | Column name mismatch — `items(...)?['Email']` must match the header exactly, including case |
 | Only 256 people get mail | Turn on **Pagination** with threshold `5000` (step 3.3.5) |
-| "File not found" after re-upload | Deleting and re-uploading changes the file ID — reselect the file in the action, and overwrite in place next time |
+| "File not found" after re-upload | Deleting and re-uploading (or moving the file) changes the file ID — reselect the file in the action, and overwrite in place next time |
+| **Location** dropdown has no sites | Choose **Enter custom value** and paste the site URL, e.g. `https://contoso.sharepoint.com/sites/Finance` |
+| Excel step fails with 403 | Your account lacks rights on the library, or the connection was made with a different account — check **Data → Connections** |
 | `items('Apply_to_each')` is invalid | The name in `items('…')` must match the loop name with underscores |
 | Only one mail sent | The *Send an email* action is outside the **Apply to each** — drag it inside |
 | Everyone sees each other | Multiple addresses in one **To** — the loop must send one mail per iteration |
@@ -317,10 +331,10 @@ needs a Dataverse-enabled environment and the flow must be created inside the so
 
 | File | Purpose |
 |---|---|
-| `recipients.xlsx` | Starter sheet with the `Recipients` named table — upload to OneDrive, then edit it there |
+| `recipients.xlsx` | Starter sheet with the `Recipients` named table — upload to SharePoint, then edit it there |
 | `flow/definition.json` | Reference definition of the finished flow (compare with **Peek code**) |
 
-Once the sheet is on OneDrive, that copy is the live list. The local `recipients.xlsx` is only the
+Once the sheet is in SharePoint, that copy is the live list. The local `recipients.xlsx` is only the
 starting point — do not keep editing both.
 
 ---

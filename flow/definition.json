@@ -1,10 +1,16 @@
 {
   "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
   "contentVersion": "1.0.0.0",
-  "comment": "Weekly credit-card reminder. Reads the recipients from a named table in an Excel file on OneDrive, then sends one separate email per row. Runs in the Microsoft cloud - laptop/Outlook do NOT need to be on.",
+  "comment": "Weekly credit-card reminder. Reads the recipients from a named table in an Excel file in a SharePoint document library, then sends one separate email per row. Runs in the Microsoft cloud - laptop/Outlook do NOT need to be on.",
   "parameters": {
-    "$connections": { "type": "Object", "defaultValue": {} },
-    "$authentication": { "type": "SecureObject", "defaultValue": {} }
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    },
+    "$authentication": {
+      "type": "SecureObject",
+      "defaultValue": {}
+    }
   },
   "triggers": {
     "Every_Monday_10_AM": {
@@ -13,9 +19,15 @@
         "frequency": "Week",
         "interval": 1,
         "schedule": {
-          "weekDays": [ "Monday" ],
-          "hours": [ "10" ],
-          "minutes": [ 0 ]
+          "weekDays": [
+            "Monday"
+          ],
+          "hours": [
+            "10"
+          ],
+          "minutes": [
+            0
+          ]
         },
         "timeZone": "India Standard Time",
         "startTime": "2026-09-21T10:00:00Z"
@@ -30,7 +42,7 @@
       "type": "OpenApiConnection",
       "runAfter": {},
       "metadata": {
-        "note": "Pick Location / Document Library / File / Table from the dropdowns in the designer - the ids below are filled in for you. The table must be a NAMED Excel table ('Recipients'), not a plain sheet.",
+        "note": "Pick Location / Document Library / File / Table from the dropdowns in the designer - the ids below are filled in for you. Location = your SharePoint site, Document Library = usually 'Documents'. The table must be a NAMED Excel table ('Recipients'), not a plain sheet.",
         "filter": "Remove the $filter line if you do not use an Active column."
       },
       "inputs": {
@@ -40,8 +52,8 @@
           "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
         },
         "parameters": {
-          "source": "me",
-          "drive": "<OneDrive id - chosen from the Document Library dropdown>",
+          "source": "<SharePoint site - chosen from the Location dropdown, e.g. https://contoso.sharepoint.com/sites/Finance>",
+          "drive": "<document library id - chosen from the Document Library dropdown, usually 'Documents'>",
           "file": "<file id - chosen from the File dropdown, /Automation/recipients.xlsx>",
           "table": "Recipients",
           "$filter": "Active eq 'Yes'"
@@ -49,15 +61,23 @@
         "authentication": "@parameters('$authentication')"
       },
       "runtimeConfiguration": {
-        "paginationPolicy": { "minimumItemCount": 5000 }
+        "paginationPolicy": {
+          "minimumItemCount": 5000
+        }
       }
     },
     "Send_one_email_per_person": {
       "type": "Foreach",
       "foreach": "@body('List_rows_present_in_a_table')?['value']",
-      "runAfter": { "List_rows_present_in_a_table": [ "Succeeded" ] },
+      "runAfter": {
+        "List_rows_present_in_a_table": [
+          "Succeeded"
+        ]
+      },
       "runtimeConfiguration": {
-        "concurrency": { "repetitions": 1 }
+        "concurrency": {
+          "repetitions": 1
+        }
       },
       "actions": {
         "Send_an_email_(V2)": {
