@@ -110,20 +110,38 @@ Setting the time zone also keeps 10:00 AM correct across daylight-saving changes
 
 1. **+ New step** → search **Excel Online (Business)** → **List rows present in a table**.
 2. Sign in when prompted to create the connection (this stores a consented token in the cloud).
-3. Fill the dropdowns — do not type these by hand, pick them so the ids resolve:
+3. Fill the dropdowns **in order, top to bottom** — each one loads the choices for the next, so
+   skipping ahead leaves the later dropdowns empty. Pick from the lists rather than typing, so the
+   underlying ids resolve:
    - **Location**: your SharePoint site, e.g. `https://contoso.sharepoint.com/sites/Finance`
-     (if it is not in the list, choose **Enter custom value** and paste the site URL)
    - **Document Library**: `Documents` (or whichever library you uploaded to)
-   - **File**: browse to `/Automation/recipients.xlsx`
-   - **Table**: `Recipients`
-4. **Show advanced options** → **Filter Query** (only if you use the `Active` column):
+   - **File**: browse to `/Automation/recipients.xlsx` — use the folder icon, do not type the path
+   - **Table**: `Recipients` — if this dropdown is empty, the sheet has no named table (section 2)
+
+   If your site is not listed under **Location**, choose **Enter custom value** and paste the site
+   URL. After that the **Document Library** dropdown sometimes stays empty — reselect the site, or
+   pick the library by custom value too.
+
+4. **Filter Query** (only if you use the `Active` column) — in the classic designer it is under
+   **Show advanced options**; in the new designer, expand **Advanced parameters** and tick
+   **Filter Query**:
 
 ```
 Active eq 'Yes'
 ```
 
+   The value is case-sensitive and the quotes must be straight `'`, not curly. If the filter ever
+   errors, delete it and put a **Condition** inside the loop instead
+   (`items('Send_one_email_per_person')?['Active']` **is equal to** `Yes`) — same result, sends only
+   when true.
+
 5. ⋯ → **Settings** → **Pagination** → **On**, **Threshold** = `5000`.
-   Without this the connector stops at the first 256 rows.
+   Without this the connector stops at the first 256 rows — and it stops silently, with a green
+   run and no error.
+
+6. Click **Test** → **Manually** once now, just to confirm this step returns your rows before you
+   build the rest. Expand the action's **Outputs** and look for `value` holding one object per
+   person, with `Name` and `Email` keys.
 
 ### Step 3.4 — Loop over the people
 
